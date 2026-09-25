@@ -11,6 +11,7 @@ const CONFIG_PATH   = path.join(__dirname, "..", "config", "agent-config.json");
 const DEFAULT_PATH  = path.join(__dirname, "..", "config", "agent-config.default.json");
 const PROMPT_PATH   = path.join(__dirname, "..", "config", "agent-prompt.txt");
 const TRIGGER_PATH  = path.join(__dirname, "..", "config", "trigger.json");
+const PARAM_KEYS    = ["fidelity", "autonomy", "clarification", "explanations"];
 
 if (!fs.existsSync(CONFIG_PATH)) {
   fs.copyFileSync(DEFAULT_PATH, CONFIG_PATH);
@@ -93,6 +94,18 @@ app.put("/config", (req, res) => {
     if (!incoming || typeof incoming !== "object") {
       return res.status(400).json({ error: "Invalid body" });
     }
+    // Only the four behaviour parameters are stored; unknown keys are dropped
+    // and missing ones keep their current value.
+    const current = readConfig().global || {};
+    const global = {};
+    for (const key of PARAM_KEYS) {
+      const value = incoming.global?.[key] ?? current[key];
+      if (!Number.isInteger(value) || value < 1 || value > 5) {
+        return res.status(400).json({ error: `Invalid value for ${key}: must be an integer 1–5` });
+      }
+      global[key] = value;
+    }
+    incoming.global = global;
     incoming.updated_at = new Date().toISOString();
     writeConfig(incoming);
     res.json(incoming);
