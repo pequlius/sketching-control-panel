@@ -1,0 +1,29 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node control/scripts/inject-context.js",
+            "timeout": 10,
+            "statusMessage": "Laddar kontrollpanel..."
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node control/scripts/guard-write.js",
+            "timeout": 5,
+            "statusMessage": "Kontrollerar läge..."
+          }
+        ]
+      }
+    ]
+  }
+}

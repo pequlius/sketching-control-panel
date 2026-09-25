@@ -1,0 +1,12 @@
+{
+  "global": {
+    "fidelity": 3,
+    "autonomy": 2,
+    "clarification": 2,
+    "explanations": 2,
+    "ethics": 3
+  },
+  "mode": "admin",
+  "current_case": "case-01",
+  "updated_at": ""
+}

@@ -1,0 +1,13 @@
+{
+  "name": "agent-control",
+  "version": "1.0.0",
+  "description": "Agent Control System — scripts for managing cases and config",
+  "scripts": {
+    "start": "concurrently \"node server/server.js\" \"npm run dev --prefix gui\"",
+    "new-case": "node scripts/new-case.js",
+    "reset": "node scripts/reset.js"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

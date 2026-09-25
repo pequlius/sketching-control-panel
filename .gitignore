@@ -1,0 +1,9 @@
+node_modules/
+cases/
+**/config/agent-config.json
+**/config/agent-prompt.txt
+**/config/trigger.json
+.DS_Store
+dist/
+**/.claude/settings.local.json
+**/.env*

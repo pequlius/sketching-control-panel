@@ -1,0 +1,26 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Express API (control/server)",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["server/server.js"],
+      "cwd": "control",
+      "port": 3333
+    },
+    {
+      "name": "Vite GUI (control/gui)",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "cwd": "control/gui",
+      "port": 5173
+    },
+    {
+      "name": "All servers (concurrently)",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["start"],
+      "cwd": "control",
+      "port": null
+    }
+  ]
+}
