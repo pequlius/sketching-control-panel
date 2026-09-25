@@ -3,8 +3,7 @@
     "fidelity": 3,
     "autonomy": 2,
     "clarification": 2,
-    "explanations": 2,
-    "ethics": 3
+    "explanations": 2
   },
   "mode": "admin",
   "current_case": "case-01",

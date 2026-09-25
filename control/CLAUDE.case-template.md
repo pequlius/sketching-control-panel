@@ -14,4 +14,3 @@ If that file is also missing, apply these defaults:
 - Implement only what is explicitly requested
 - Ask before deviating from instructions
 - Provide a brief summary after completing work
-- ethics: 3 (standard professional practice)

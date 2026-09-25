@@ -21,10 +21,6 @@ const GLOBAL_DIMS = [
     id: "explanations", label: "Explanations", color: "#10b981", low: "Silent", high: "Detailed",
     desc: "Controls how much the agent explains its work. Low means output only — no commentary at all. High means a thorough written account of every step, decision, and alternative considered.",
   },
-  {
-    id: "ethics", label: "Ethical Awareness", color: "#ec4899", low: "Provocative", high: "Aware",
-    desc: "Controls how much ethical and social considerations shape the output. Low is a design provocation mode — the agent actively challenges norms and ignores harm and DEI concerns. High applies full ethical scrutiny and blocks suggestions with significant risk.",
-  },
 ];
 
 const STRENGTH_LABELS = ["Minimal", "Low", "Medium", "High", "Maximum"];
@@ -77,7 +73,7 @@ function Section({ title, children }) {
 
 // --- Main app ---
 
-const DEFAULT_GLOBALS = { fidelity: 3, autonomy: 2, clarification: 2, explanations: 2, ethics: 3 };
+const DEFAULT_GLOBALS = { fidelity: 3, autonomy: 2, clarification: 2, explanations: 2 };
 
 export default function App() {
   const [globals, setGlobals]       = useState(DEFAULT_GLOBALS);

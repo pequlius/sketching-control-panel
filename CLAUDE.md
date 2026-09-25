@@ -1,4 +1,4 @@
-# Craft Ethics Control Panel
+# Sketching Control Panel
 
 A local control system for governing AI agent behavior during design work.
 Run from the **project root** — all hooks and scripts assume this working directory.
@@ -6,7 +6,7 @@ Run from the **project root** — all hooks and scripts assume this working dire
 ## What this system does
 
 - **Kontrollpanel** (GUI + server) lets you set behavioral parameters for AI agents:
-  fidelity, autonomy, clarification style, explanations, and ethics level.
+  fidelity, autonomy, clarification style, and explanations.
 - **Cases** (`cases/case-XX/`) are project workspaces. Each case has a decision log
   where the design-decision-tracker agent records MDRs (Micro Decision Records).
 - **Hooks** (`.claude/settings.json`) automatically inject the current configuration

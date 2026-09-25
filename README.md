@@ -1,12 +1,12 @@
-# Craft Ethics Control Panel
+# Sketching Control Panel
 
-An experimental system for steering AI agent behaviour in real time during programming sessions. Built as part of HCI research into human–AI collaboration.
+An experimental system for exploring sketching with AI: how designers can keep an agent's output provisional and open, rather than letting it arrive prematurely finished. Built as part of HCI research into human–AI collaboration in design work.
 
 ---
 
 ## What it does
 
-The system lets you configure how a Claude Code agent behaves before and during a task — without editing prompts manually. You control five global behavioural dimensions through a browser-based GUI, and changes take effect on the agent's next step.
+The system lets you configure how a Claude Code agent behaves before and during a task — without editing prompts manually. You control four global behavioural dimensions through a browser-based GUI, and changes take effect on the agent's next step.
 
 It also has a **mode switch** (Admin / Case). In **Case mode** the agent is steered by the behaviour parameters and may only edit files inside the active case folder. In **Admin mode** you build and configure the control system itself, with no restrictions.
 
@@ -72,7 +72,7 @@ The main view stays focused on the behaviour **parameters** and the **decision l
 
 ### Parameters
 
-Five sliders, each on a scale of 1–5:
+Four sliders, each on a scale of 1–5:
 
 | Parameter | Low (1) | High (5) | What it controls |
 |-----------|---------|----------|-----------------|
@@ -80,7 +80,6 @@ Five sliders, each on a scale of 1–5:
 | **Autonomy** | Strict | Free | How freely the agent interprets instructions. Low = word-for-word execution, nothing added or reinterpreted. High = treats the instruction as a brief and freely adds ideas, reframes the problem, and expands scope. |
 | **Clarification** | Assumes | Asks | Whether the agent clarifies before starting. Low = picks an interpretation and proceeds. High = mandatory restatement and approval before writing anything. |
 | **Explanations** | Silent | Detailed | How much the agent documents its work. Low = output only. High = thorough log of every step and decision. |
-| **Ethical Awareness** | Provocative | Aware | How much ethical and social considerations shape the output. Low = design provocation mode. High = full ethical scrutiny. |
 
 ---
 
@@ -160,7 +159,7 @@ No network call is needed, so it works on any machine, including those where new
 ## Project structure
 
 ```
-craft-ethics-control-panel/
+sketching-control-panel/
 ├── cases/                               # One folder per session (gitignored)
 │   └── case-01/
 │       ├── CLAUDE.md                    # Behaviour contract for this case
