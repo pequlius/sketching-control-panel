@@ -5,6 +5,7 @@ const path = require("path");
 const os = require("os");
 const { createNewCase } = require("../scripts/new-case");
 const { startMidiPanel } = require("./midi-panel");
+const { startSketchInbox } = require("./sketch-inbox");
 
 const app = express();
 const PORT = 3333;
@@ -47,6 +48,13 @@ const midi = startMidiPanel({
   setParam,
 });
 
+const sketches = startSketchInbox({
+  getTarget: () => {
+    const config = readConfig();
+    return { mode: config.mode, caseId: config.current_case };
+  },
+});
+
 const FIDELITY_TEXT = {
   1: "WIREFRAME PASS ONLY. Do not implement anything. Produce structural outlines only: component shells, function signatures, placeholder names, empty bodies marked TODO. This output is intentionally incomplete — it is the first layer in an iterative build. When done, write a numbered list of what passes 2, 3, etc. would fill in. Stop. Do not proceed further.",
   2: "MINIMAL STUB. Implement one small working unit — one function, one component, one endpoint — and nothing else. No helpers, no error handling, no edge cases. When done, write one sentence describing exactly what the next step would be. Stop.",
@@ -79,6 +87,14 @@ const EXPLANATIONS_TEXT = {
   5: "DETAILED LOG. A thorough written account of everything done: each step taken, every decision made and why, alternatives considered and rejected, and what was deliberately left out of scope. No go-aheads required — just document everything.",
 };
 
+// The exact text injected for each parameter and level, shown in the GUI.
+const PARAM_TEXTS = {
+  fidelity:      FIDELITY_TEXT,
+  autonomy:      AUTONOMY_TEXT,
+  clarification: CLARIFICATION_TEXT,
+  explanations:  EXPLANATIONS_TEXT,
+};
+
 function buildPrompt(config) {
   const g = config.global;
   const lines = [];
@@ -100,6 +116,10 @@ app.get("/config", (req, res) => {
   } catch (err) {
     res.status(500).json({ error: "Could not read config", detail: err.message });
   }
+});
+
+app.get("/params/texts", (req, res) => {
+  res.json(PARAM_TEXTS);
 });
 
 app.put("/config", (req, res) => {
@@ -335,6 +355,16 @@ app.get("/report/view", (req, res) => {
 
 app.get("/midi", (req, res) => {
   res.json(midi.getStatus());
+});
+
+app.get("/sketches", (req, res) => {
+  res.json(sketches.getStatus());
+});
+
+app.get("/sketches/latest", (req, res) => {
+  const latest = sketches.getStatus().latest;
+  if (!latest) return res.status(404).json({ error: "No sketches in the active case" });
+  res.sendFile(latest.path);
 });
 
 app.get("/config/prompt", (req, res) => {

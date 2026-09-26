@@ -27,7 +27,7 @@ const STRENGTH_LABELS = ["Minimal", "Low", "Medium", "High", "Maximum"];
 
 // --- Sub-components ---
 
-function GlobalSlider({ dim, value, onChange }) {
+function GlobalSlider({ dim, value, text, onChange }) {
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "4px" }}>
@@ -38,8 +38,12 @@ function GlobalSlider({ dim, value, onChange }) {
           {STRENGTH_LABELS[value - 1]}
         </span>
       </div>
-      <div style={{ fontSize: "10px", color: "#9ca3af", fontFamily: SANS, lineHeight: "1.5", marginBottom: "8px" }}>
-        {dim.desc}
+      {/* The exact instruction injected into the prompt at this level */}
+      <div
+        title={dim.desc}
+        style={{ fontSize: "12px", color: "#1f2937", fontFamily: SANS, lineHeight: "1.55", marginBottom: "10px", minHeight: "3.1em" }}
+      >
+        {text ?? dim.desc}
       </div>
       <input
         type="range" min={1} max={5} value={value}
@@ -47,8 +51,8 @@ function GlobalSlider({ dim, value, onChange }) {
         style={{ width: "100%", cursor: "pointer", accentColor: dim.color }}
       />
       <div style={{ display: "flex", justifyContent: "space-between", marginTop: "2px" }}>
-        <span style={{ fontSize: "9px", fontFamily: MONO, color: "#9ca3af" }}>{dim.low}</span>
-        <span style={{ fontSize: "9px", fontFamily: MONO, color: "#9ca3af" }}>{dim.high}</span>
+        <span style={{ fontSize: "10px", fontFamily: MONO, color: "#4b5563" }}>{dim.low}</span>
+        <span style={{ fontSize: "10px", fontFamily: MONO, color: "#4b5563" }}>{dim.high}</span>
       </div>
     </div>
   );
@@ -63,7 +67,7 @@ function Section({ title, children }) {
       boxShadow: "0 1px 16px #0000000c, 0 0 0 1px #e5e7eb",
       marginBottom: "14px",
     }}>
-      <div style={{ fontSize: "9px", fontFamily: MONO, letterSpacing: "0.22em", color: "#9ca3af", marginBottom: "20px" }}>
+      <div style={{ fontSize: "9px", fontFamily: MONO, letterSpacing: "0.22em", color: "#6b7280", marginBottom: "20px" }}>
         {title}
       </div>
       {children}
@@ -86,6 +90,8 @@ export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [creatingCase, setCreatingCase] = useState(false);
   const [midi, setMidi]                 = useState({ connected: false, port: null });
+  const [sketches, setSketches]         = useState(null);
+  const [paramTexts, setParamTexts]     = useState(null);
 
   const triggerAnalysis = useCallback(() => {
     setAnalyzing(true);
@@ -138,8 +144,12 @@ export default function App() {
   const savingRef      = useRef(false);
   const editSeqRef     = useRef(0);
 
-  // Fetch config on mount
+  // Fetch config (and the injected text for every parameter level) on mount
   useEffect(() => {
+    fetch(`${API}/params/texts`)
+      .then(r => r.json())
+      .then(setParamTexts)
+      .catch(() => {});
     fetch(`${API}/config`)
       .then(r => {
         if (!r.ok) throw new Error("bad response");
@@ -218,6 +228,10 @@ export default function App() {
         .then(r => r.json())
         .then(setMidi)
         .catch(() => setMidi({ connected: false, port: null }));
+      fetch(`${API}/sketches`)
+        .then(r => r.json())
+        .then(setSketches)
+        .catch(() => setSketches(null));
     }, 1000);
     return () => clearInterval(id);
   }, []);
@@ -254,7 +268,7 @@ export default function App() {
                 PROTOTYPE
               </span>
             </div>
-            <div style={{ fontSize: "11px", color: "#9ca3af", fontFamily: MONO }}>
+            <div style={{ fontSize: "11px", color: "#6b7280", fontFamily: MONO }}>
               Configures the behaviour of the active agent
             </div>
           </div>
@@ -264,11 +278,11 @@ export default function App() {
             aria-label="Settings"
             style={{
               background: "none", border: "none", cursor: "pointer",
-              padding: "4px", color: "#9ca3af", lineHeight: 0,
+              padding: "4px", color: "#6b7280", lineHeight: 0,
               transition: "color 0.15s",
             }}
             onMouseEnter={e => (e.currentTarget.style.color = "#111")}
-            onMouseLeave={e => (e.currentTarget.style.color = "#9ca3af")}
+            onMouseLeave={e => (e.currentTarget.style.color = "#6b7280")}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="3" />
@@ -285,11 +299,46 @@ export default function App() {
                 key={dim.id}
                 dim={dim}
                 value={globals[dim.id]}
+                text={paramTexts?.[dim.id]?.[globals[dim.id]]}
                 onChange={v => setGlobals(g => ({ ...g, [dim.id]: v }))}
               />
             ))}
           </div>
         </Section>
+
+        {/* Sketch inbox */}
+        {sketches && (
+          <Section title="SKETCHES">
+            {sketches.lastSkipped && (
+              <div style={{
+                background: "#fffbeb", border: "1px solid #fcd34d", borderRadius: "10px",
+                padding: "8px 12px", marginBottom: "12px",
+                fontSize: "10px", fontFamily: MONO, color: "#92400e", lineHeight: "1.6",
+              }}>
+                Ignored {sketches.lastSkipped.file} ({sketches.lastSkipped.reason}). Switch to Case mode to add sketches.
+              </div>
+            )}
+            {sketches.latest ? (
+              <div>
+                <img
+                  src={`${API}/sketches/latest?f=${encodeURIComponent(sketches.latest.name)}`}
+                  alt="Latest sketch"
+                  style={{ display: "block", maxWidth: "100%", maxHeight: "220px", borderRadius: "10px", border: "1px solid #e5e7eb" }}
+                />
+                <div style={{ fontSize: "10px", fontFamily: MONO, color: "#6b7280", marginTop: "6px" }}>
+                  {sketches.latest.case}/sketches/{sketches.latest.name}
+                </div>
+              </div>
+            ) : (
+              <div style={{ fontSize: "10px", fontFamily: MONO, color: "#6b7280" }}>
+                No sketches in this case yet.
+              </div>
+            )}
+            <div style={{ fontSize: "9px", fontFamily: MONO, color: "#6b7280", marginTop: "10px", lineHeight: "1.6", wordBreak: "break-all" }}>
+              Inbox: {sketches.folder}{sketches.folderExists ? "" : " (folder not found)"}
+            </div>
+          </Section>
+        )}
 
           <Section title="DECISION LOG">
             {/* Trigger button */}
@@ -310,7 +359,7 @@ export default function App() {
             </button>
 
             {lastAnalyzed && (
-              <div style={{ fontSize: "9px", fontFamily: MONO, color: "#9ca3af", marginBottom: "12px" }}>
+              <div style={{ fontSize: "9px", fontFamily: MONO, color: "#6b7280", marginBottom: "12px" }}>
                 Last analysed: {lastAnalyzed.toLocaleTimeString()}
               </div>
             )}
@@ -337,7 +386,7 @@ export default function App() {
 
             {/* Empty state */}
             {decisions.length === 0 && !analyzing && (
-              <div style={{ fontSize: "11px", fontFamily: MONO, color: "#9ca3af", textAlign: "center", padding: "20px 0" }}>
+              <div style={{ fontSize: "11px", fontFamily: MONO, color: "#6b7280", textAlign: "center", padding: "20px 0" }}>
                 No decisions logged yet
               </div>
             )}
@@ -367,7 +416,7 @@ export default function App() {
             })}
           </Section>
 
-        <div style={{ textAlign: "center", fontSize: "9px", color: "#c4c4bc", fontFamily: MONO, letterSpacing: "0.12em" }}>
+        <div style={{ textAlign: "center", fontSize: "9px", color: "#9ca3af", fontFamily: MONO, letterSpacing: "0.12em" }}>
           HCI RESEARCH — PROGRAMMING WITH AI
         </div>
       </div>
@@ -392,13 +441,13 @@ export default function App() {
           >
             {/* Modal header */}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-              <div style={{ fontSize: "9px", fontFamily: MONO, letterSpacing: "0.22em", color: "#9ca3af" }}>
+              <div style={{ fontSize: "9px", fontFamily: MONO, letterSpacing: "0.22em", color: "#6b7280" }}>
                 SETTINGS
               </div>
               <button
                 onClick={() => setSettingsOpen(false)}
                 aria-label="Close"
-                style={{ background: "none", border: "none", cursor: "pointer", fontSize: "16px", color: "#9ca3af", lineHeight: 1 }}
+                style={{ background: "none", border: "none", cursor: "pointer", fontSize: "16px", color: "#6b7280", lineHeight: 1 }}
               >
                 ✕
               </button>
@@ -424,7 +473,7 @@ export default function App() {
                 </button>
               ))}
             </div>
-            <div style={{ fontSize: "10px", fontFamily: MONO, color: "#9ca3af", lineHeight: "1.6", marginBottom: "24px" }}>
+            <div style={{ fontSize: "10px", fontFamily: MONO, color: "#6b7280", lineHeight: "1.6", marginBottom: "24px" }}>
               {mode === "case"
                 ? <>Active case: <strong style={{ color: "#374151" }}>{currentCase || "(none)"}</strong>. Edits are restricted to <code>cases/{currentCase || "…"}/</code>; behaviour parameters apply.</>
                 : <>Full access to the control panel and all files. Behaviour parameters do not constrain admin work.</>}
@@ -446,7 +495,7 @@ export default function App() {
             >
               {creatingCase ? "CREATING..." : "+ NEW CASE"}
             </button>
-            <div style={{ fontSize: "10px", fontFamily: MONO, color: "#9ca3af", lineHeight: "1.6", marginTop: "8px" }}>
+            <div style={{ fontSize: "10px", fontFamily: MONO, color: "#6b7280", lineHeight: "1.6", marginTop: "8px" }}>
               Creates the next numbered case folder, makes it the active case, and switches to Case mode.
             </div>
           </div>
@@ -472,7 +521,7 @@ export default function App() {
           background: midi.connected ? "#10b981" : "#d1d5db", flexShrink: 0,
         }} />
         {midi.connected ? `MIDI · ${midi.port}` : "MIDI · not connected"}
-        <span style={{ marginLeft: "auto", color: "#9ca3af" }}>
+        <span style={{ marginLeft: "auto", color: "#6b7280" }}>
           {mode === "case" ? `CASE · ${currentCase || "—"}` : "ADMIN"}
         </span>
       </div>

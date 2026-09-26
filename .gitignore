@@ -11,3 +11,4 @@ dist/
 # MIDI panel: local mapping copy and gesture logs
 **/config/midi-map.json
 control/logs/
+**/config/sketch-inbox.json

@@ -58,5 +58,35 @@ if (mode === "admin") {
     `request requires changing them, stop and tell the user to switch to ` +
     `Admin mode in the control panel.`;
 
-  emit("[KONTROLLPANEL]\n" + prompt + restriction);
+  emit("[KONTROLLPANEL]\n" + prompt + restriction + newSketches(currentCase));
+}
+
+// Lists sketches added to the case since the previous prompt and marks them
+// as announced in cases/<case>/sketches/.announced.json.
+function newSketches(caseId) {
+  const dir   = path.join(ROOT, "cases", caseId, "sketches");
+  const state = path.join(dir, ".announced.json");
+  let files;
+  try {
+    files = fs.readdirSync(dir).filter(n => /\.(jpe?g|png)$/i.test(n)).sort();
+  } catch {
+    return "";
+  }
+  let announced = [];
+  try { announced = JSON.parse(fs.readFileSync(state, "utf8")).announced || []; } catch { /* first time */ }
+
+  const fresh = files.filter(n => !announced.includes(n));
+  if (fresh.length === 0) return "";
+  try {
+    fs.writeFileSync(state, JSON.stringify({ announced: [...announced, ...fresh] }, null, 2), "utf8");
+  } catch { /* still announce; worst case they are announced again */ }
+
+  return (
+    `\n\n[NEW SKETCHES]\n` +
+    `The user has added ${fresh.length} physical sketch${fresh.length > 1 ? "es" : ""} ` +
+    `(photographed on paper) to this case since the previous prompt:\n` +
+    fresh.map(n => `- ${path.join(dir, n)}`).join("\n") +
+    `\nBefore acting on this prompt, open each file with the Read tool and look at it. ` +
+    `The sketches are part of the user's input for this prompt.`
+  );
 }

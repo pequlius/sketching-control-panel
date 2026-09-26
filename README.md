@@ -106,6 +106,26 @@ Lists the MIDI inputs and prints every incoming message (type, channel, controll
 
 ---
 
+## Sketch inbox
+
+Physical sketches get into a case through a camera app (Windows Camera, IPEVO Visualizer) that saves a photo each time you press its button. The server watches that save folder:
+
+1. When a new `.jpg`, `.jpeg` or `.png` appears and has finished writing, it is **copied** (not moved) to `cases/<active case>/sketches/` with an ISO timestamp name, e.g. `2026-09-26T13-34-25-041Z.jpg`.
+2. At your next prompt, the context hook lists the sketches added since the previous prompt and tells the agent to open them with the Read tool before acting.
+3. The GUI shows a thumbnail of the latest sketch in the active case.
+
+Only photos taken after the server started are picked up; older photos in the folder are left alone. In **Admin mode** (or with no active case) new photos are ignored and the GUI says so. Each sketch is logged to `control/logs/panel.jsonl` (timestamp, original path, new path).
+
+The folder is set in `control/config/sketch-inbox.json` (copied from `sketch-inbox.default.json` on first run). The default `"auto"` asks Windows where the Camera app saves photos: the Camera Roll known folder, normally `Pictures\Camera Roll` in your user folder. To use IPEVO Visualizer, set it to that app's save folder, for example:
+
+```json
+{ "folder": "%USERPROFILE%\\Documents\\IPEVO Visualizer", "extensions": [".jpg", ".jpeg", ".png"] }
+```
+
+Changes are picked up within a second, no restart needed. The server runs normally if the folder does not exist.
+
+---
+
 ## Decision tracking
 
 Each case session has a `decisions.md` file that records design decisions in MDR (Micro Decision Record) format. The case agent populates this file automatically after each completed task (per the `[DECISION TRACKING]` instruction injected into the prompt) — no manual triggering needed.
@@ -186,6 +206,7 @@ sketching-control-panel/
 ├── cases/                               # One folder per session (gitignored)
 │   └── case-01/
 │       ├── CLAUDE.md                    # Behaviour contract for this case
+│       ├── sketches/                    # Photographed sketches from the sketch inbox
 │       └── decisions.md                 # Auto-generated decision log (MDR format)
 │
 ├── control/                             # The control system
@@ -193,13 +214,15 @@ sketching-control-panel/
 │   ├── config/
 │   │   ├── agent-config.json            # Live config incl. mode + current_case (gitignored)
 │   │   ├── agent-config.default.json    # Default values
+│   │   ├── sketch-inbox.json            # Sketch inbox folder (gitignored, copied from sketch-inbox.default.json)
 │   │   ├── midi-map.json                # EF44 mapping (gitignored, copied from midi-map.default.json)
 │   │   └── agent-prompt.txt             # Compiled instructions (gitignored, read by agent)
 │   ├── gui/                             # React + Vite frontend
 │   │   └── src/App.jsx
-│   ├── logs/panel.jsonl                 # Fader gesture log (gitignored)
+│   ├── logs/panel.jsonl                 # Fader gestures and sketches log (gitignored)
 │   ├── server/
 │   │   ├── server.js                    # Express API (port 3333)
+│   │   ├── sketch-inbox.js              # Watches the camera folder, copies photos into the case
 │   │   └── midi-panel.js                # EF44 MIDI input: faders → parameters
 │   └── scripts/
 │       ├── new-case.js                  # Creates a new numbered case folder
@@ -227,6 +250,8 @@ The server exposes endpoints on `http://localhost:3333` used by the GUI:
 | `GET` | `/config` | Returns the full config JSON |
 | `PUT` | `/config` | Saves a new config and regenerates `agent-prompt.txt` |
 | `GET` | `/midi` | MIDI panel status: `connected`, `port` |
+| `GET` | `/sketches` | Sketch inbox status: watched folder, latest sketch, last ignored photo |
+| `GET` | `/sketches/latest` | The latest sketch image in the active case |
 | `GET` | `/config/prompt` | Returns compiled system instructions as plain text |
 | `GET` | `/decisions` | Returns parsed MDR entries from the current case |
 | `POST` | `/new-case` | Creates the next case folder, sets it as `current_case`, returns the new config |
