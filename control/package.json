@@ -5,9 +5,13 @@
   "scripts": {
     "start": "concurrently \"node server/server.js\" \"npm run dev --prefix gui\"",
     "new-case": "node scripts/new-case.js",
-    "reset": "node scripts/reset.js"
+    "reset": "node scripts/reset.js",
+    "midi-learn": "node scripts/midi-learn.js"
   },
   "devDependencies": {
     "concurrently": "^9.2.1"
+  },
+  "dependencies": {
+    "easymidi": "^3.2.0"
   }
 }

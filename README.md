@@ -83,6 +83,29 @@ Four sliders, each on a scale of 1–5:
 
 ---
 
+## The physical panel (Intech Studio EF44)
+
+The four faders on an EF44 drive the four parameters, left to right: Fidelity, Autonomy, Clarification, Explanations. The server reads the panel over USB MIDI, so it works with the GUI closed. The GUI picks up fader changes within a second and shows the MIDI connection in the bottom bar.
+
+- **Plug and play.** The server starts normally without the EF44 and connects within a few seconds when it is plugged in (and reconnects after unplugging).
+- **Quantization.** Each fader's 0–127 range is split into five equal zones with a few steps of hysteresis at the borders, so a fader resting on a border does not flicker. The config is only written when the value actually changes.
+- **Last touched wins.** The faders are not motorized. After a change in the GUI the fader stays where it was; the next time it is moved, it sets the value again, even if that jumps.
+- **Gesture log.** Every fader message is appended to `control/logs/panel.jsonl` (timestamp, fader, raw value, quantized value) for analysis after a session.
+
+### Mapping file
+
+The mapping lives in `control/config/midi-map.json`, copied from `midi-map.default.json` on first run. It holds the port name substring, the MIDI channel (1–16, as shown in Grid Editor), the fader CC numbers and which parameter each drives, and the encoder push notes / turn CCs (stored, not yet bound to anything). Restart the server after editing it.
+
+### MIDI learn
+
+```bash
+cd control && npm run midi-learn
+```
+
+Lists the MIDI inputs and prints every incoming message (type, channel, controller/note, value, and what it maps to in `midi-map.json`). Use it to verify the mapping, or to find the new numbers after changing the device configuration in Grid Editor. If it cannot open the port, another program has it open exclusively — stop the server or close Grid Editor and try again.
+
+---
+
 ## Decision tracking
 
 Each case session has a `decisions.md` file that records design decisions in MDR (Micro Decision Record) format. The case agent populates this file automatically after each completed task (per the `[DECISION TRACKING]` instruction injected into the prompt) — no manual triggering needed.
@@ -170,16 +193,20 @@ sketching-control-panel/
 │   ├── config/
 │   │   ├── agent-config.json            # Live config incl. mode + current_case (gitignored)
 │   │   ├── agent-config.default.json    # Default values
+│   │   ├── midi-map.json                # EF44 mapping (gitignored, copied from midi-map.default.json)
 │   │   └── agent-prompt.txt             # Compiled instructions (gitignored, read by agent)
 │   ├── gui/                             # React + Vite frontend
 │   │   └── src/App.jsx
+│   ├── logs/panel.jsonl                 # Fader gesture log (gitignored)
 │   ├── server/
-│   │   └── server.js                    # Express API (port 3333)
+│   │   ├── server.js                    # Express API (port 3333)
+│   │   └── midi-panel.js                # EF44 MIDI input: faders → parameters
 │   └── scripts/
 │       ├── new-case.js                  # Creates a new numbered case folder
 │       ├── build-prompt.js              # Compiles agent-prompt.txt (server + hook fallback)
 │       ├── inject-context.js            # UserPromptSubmit hook: injects mode-aware context
 │       ├── guard-write.js               # PreToolUse hook: blocks edits outside the case in Case mode
+│       ├── midi-learn.js                # Prints incoming MIDI messages (npm run midi-learn)
 │       └── reset.js                     # Resets config to defaults
 │
 ├── .claude/                             # Loaded once, from the project root
@@ -199,6 +226,7 @@ The server exposes endpoints on `http://localhost:3333` used by the GUI:
 |--------|------|-------------|
 | `GET` | `/config` | Returns the full config JSON |
 | `PUT` | `/config` | Saves a new config and regenerates `agent-prompt.txt` |
+| `GET` | `/midi` | MIDI panel status: `connected`, `port` |
 | `GET` | `/config/prompt` | Returns compiled system instructions as plain text |
 | `GET` | `/decisions` | Returns parsed MDR entries from the current case |
 | `POST` | `/new-case` | Creates the next case folder, sets it as `current_case`, returns the new config |

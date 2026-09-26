@@ -1,0 +1,16 @@
+{
+  "port": "Intech Grid",
+  "channel": 4,
+  "faders": [
+    { "cc": 36, "param": "fidelity" },
+    { "cc": 37, "param": "autonomy" },
+    { "cc": 38, "param": "clarification" },
+    { "cc": 39, "param": "explanations" }
+  ],
+  "encoders": [
+    { "push_note": 32, "turn_cc": 32, "action": null },
+    { "push_note": 33, "turn_cc": 33, "action": null },
+    { "push_note": 34, "turn_cc": 34, "action": null },
+    { "push_note": 35, "turn_cc": 35, "action": null }
+  ]
+}

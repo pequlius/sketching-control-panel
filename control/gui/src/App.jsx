@@ -85,6 +85,7 @@ export default function App() {
   const [lastAnalyzed, setLastAnalyzed] = useState(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [creatingCase, setCreatingCase] = useState(false);
+  const [midi, setMidi]                 = useState({ connected: false, port: null });
 
   const triggerAnalysis = useCallback(() => {
     setAnalyzing(true);
@@ -131,6 +132,11 @@ export default function App() {
   const initializedRef = useRef(false);
   // Preserve fields we don't expose in the UI (e.g. current_case)
   const fullConfigRef  = useRef({});
+  // Polling support: skip the PUT for values that came from the server, and
+  // ignore polls that could carry stale values over an unsaved GUI edit.
+  const fromServerRef  = useRef(false);
+  const savingRef      = useRef(false);
+  const editSeqRef     = useRef(0);
 
   // Fetch config on mount
   useEffect(() => {
@@ -156,8 +162,11 @@ export default function App() {
   // Debounced PUT whenever globals change (skip first render / load)
   useEffect(() => {
     if (!initializedRef.current) return;
+    if (fromServerRef.current) { fromServerRef.current = false; return; }
     if (syncStatus === "offline") return;
 
+    editSeqRef.current++;
+    savingRef.current = true;
     setSyncStatus("saving");
     clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
@@ -171,9 +180,47 @@ export default function App() {
           if (!r.ok) throw new Error("bad response");
           setSyncStatus("synced");
         })
-        .catch(() => setSyncStatus("offline"));
+        .catch(() => setSyncStatus("offline"))
+        .finally(() => { savingRef.current = false; });
     }, 500);
   }, [globals, mode]);
+
+  // Poll once per second so changes from the physical panel (or elsewhere)
+  // show up here. A GUI edit wins over any poll that overlaps it.
+  useEffect(() => {
+    const id = setInterval(() => {
+      const seq = editSeqRef.current;
+      fetch(`${API}/config`)
+        .then(r => {
+          if (!r.ok) throw new Error("bad response");
+          return r.json();
+        })
+        .then(data => {
+          if (!initializedRef.current || savingRef.current || seq !== editSeqRef.current) return;
+          fullConfigRef.current = data;
+          setCurrentCase(data.current_case || "");
+          setSyncStatus(s => (s === "offline" ? "synced" : s));
+          const serverMode = data.mode === "case" ? "case" : "admin";
+          setGlobals(g => {
+            const changed = data.global && Object.keys(g).some(k => g[k] !== data.global[k]);
+            if (!changed) return g;
+            fromServerRef.current = true;
+            return { ...g, ...data.global };
+          });
+          setMode(m => {
+            if (m === serverMode) return m;
+            fromServerRef.current = true;
+            return serverMode;
+          });
+        })
+        .catch(() => {});
+      fetch(`${API}/midi`)
+        .then(r => r.json())
+        .then(setMidi)
+        .catch(() => setMidi({ connected: false, port: null }));
+    }, 1000);
+    return () => clearInterval(id);
+  }, []);
 
   const statusText  = { synced: "Synced", saving: "Saving...", loading: "Loading...", offline: "Offline" }[syncStatus];
   const statusColor = { synced: "#10b981", saving: "#f59e0b", loading: "#9ca3af", offline: "#ef4444" }[syncStatus];
@@ -420,6 +467,11 @@ export default function App() {
           transition: "background 0.3s",
         }} />
         {statusText}
+        <div style={{
+          width: "6px", height: "6px", borderRadius: "50%", marginLeft: "16px",
+          background: midi.connected ? "#10b981" : "#d1d5db", flexShrink: 0,
+        }} />
+        {midi.connected ? `MIDI · ${midi.port}` : "MIDI · not connected"}
         <span style={{ marginLeft: "auto", color: "#9ca3af" }}>
           {mode === "case" ? `CASE · ${currentCase || "—"}` : "ADMIN"}
         </span>

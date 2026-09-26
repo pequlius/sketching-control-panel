@@ -4,6 +4,7 @@ const fs = require("fs");
 const path = require("path");
 const os = require("os");
 const { createNewCase } = require("../scripts/new-case");
+const { startMidiPanel } = require("./midi-panel");
 
 const app = express();
 const PORT = 3333;
@@ -32,6 +33,19 @@ function writeConfig(data) {
   fs.renameSync(tmp, CONFIG_PATH);
   fs.writeFileSync(PROMPT_PATH, buildPrompt(data), "utf8");
 }
+
+// Used by the MIDI panel: same config + writeConfig() path as PUT /config.
+function setParam(key, value) {
+  const config = readConfig();
+  config.global = { ...config.global, [key]: value };
+  config.updated_at = new Date().toISOString();
+  writeConfig(config);
+}
+
+const midi = startMidiPanel({
+  getParam: key => readConfig().global?.[key],
+  setParam,
+});
 
 const FIDELITY_TEXT = {
   1: "WIREFRAME PASS ONLY. Do not implement anything. Produce structural outlines only: component shells, function signatures, placeholder names, empty bodies marked TODO. This output is intentionally incomplete — it is the first layer in an iterative build. When done, write a numbered list of what passes 2, 3, etc. would fill in. Stop. Do not proceed further.",
@@ -317,6 +331,10 @@ app.get("/report/view", (req, res) => {
   } catch (err) {
     res.status(500).send("<p>Kunde inte läsa rapporten.</p>");
   }
+});
+
+app.get("/midi", (req, res) => {
+  res.json(midi.getStatus());
 });
 
 app.get("/config/prompt", (req, res) => {
